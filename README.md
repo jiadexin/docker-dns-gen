@@ -8,7 +8,7 @@ reference project [docker-dns-gen]，use template:
 
     {{ $domain := or ($.Env.DOMAIN_TLD) "docker" }}
     {{range $key, $value := .}}
-    address=/{{ $value.Name }}/{{$value.IP}}
+    address=/{{ $value.Hostname }}/{{$value.IP}}
     address=/{{ $value.Name }}.{{$domain}}/{{$value.IP}}
     address=/{{ $value.Hostname }}.{{$domain}}/{{$value.IP}}
     {{end}}
@@ -18,7 +18,7 @@ reference project [docker-dns-gen]，use template:
     $ docker build -t jiadx/docker-dns-gen --rm .
 
 ### Simple usage
-start ：
+start dns-gen ：
 
     docker run -d --name dns-gen \
          --restart always \
@@ -26,6 +26,15 @@ start ：
          --volume /var/run/docker.sock:/var/run/docker.sock \
          jiadx/docker-dns-gen
 `171.17.42.1` is docker0 bridge IP.
+
+when you start container:
+
+    docker run -ti --rm -h hostname1 --name host1  centos:6.7 bash
+the generated /etc/dnsmasq.conf looks like:
+
+      address=/hostname1/171.17.0.13
+      address=/host1.docker/171.17.0.13
+      address=/hostname1.docker/171.17.0.13
 
 reference [docker-dns-gen]。
 
