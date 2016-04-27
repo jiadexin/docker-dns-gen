@@ -12,12 +12,13 @@ reference project [docker-dns-gen]，use template:
     address=/{{ $value.Name }}.{{$domain}}/{{$value.IP}}
     address=/{{ $value.Hostname }}.{{$domain}}/{{$value.IP}}
     {{end}}
+And support `tcp` docker api endpoint .
 
-## build image
+# build image
 
     $ docker build -t jiadx/docker-dns-gen --rm .
 
-### Simple usage
+# Simple usage
 start dns-gen ：
 
     docker run -d --name dns-gen \
@@ -37,6 +38,15 @@ the generated /etc/dnsmasq.conf looks like:
       address=/hostname1.docker/171.17.0.13
 
 reference [docker-dns-gen]。
+
+# swarm
+use swarm manger URI-`10.110.17.21:3376`:
+
+    docker run -d --name dns-gen \
+         --restart always \
+         -p 53:53 \
+         -e DOCKER_URI=tcp://10.110.17.21:3376
+         jiadx/docker-dns-gen
 
   [docker-dns-gen]: https://github.com/jderusse/docker-dns-gen
   [docker-gen]: https://github.com/jwilder/docker-gen

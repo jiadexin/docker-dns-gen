@@ -1,3 +1,4 @@
 #!/usr/bin/env sh
 
-docker-gen -watch -notify "dnsmasq-reload -u root $@" /etc/dnsmasq.tmpl /etc/dnsmasq.conf
+DOCKER_URI=${DOCKER_URI:-unix:///var/run/docker.sock}
+docker-gen -watch -endpoint $DOCKER_URI -notify "dnsmasq-reload -u root $@" /etc/dnsmasq.tmpl /etc/dnsmasq.conf
