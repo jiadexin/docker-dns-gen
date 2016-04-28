@@ -6,12 +6,36 @@ started and stopped.
 
 reference project [docker-dns-gen]，use template:
 
-    {{ $domain := or ($.Env.DOMAIN_TLD) "docker" }}
-    {{range $key, $value := .}}
-    address=/{{ $value.Hostname }}/{{$value.IP}}
-    address=/{{ $value.Name }}.{{$domain}}/{{$value.IP}}
-    address=/{{ $value.Hostname }}.{{$domain}}/{{$value.IP}}
-    {{end}}
+    {{ define "host" }}
+            {{ $host := .Host }}
+            {{ $tld := .Tld }}
+            {{ if eq $tld "" }}
+                {{ range $index, $network := .Container.Networks }}
+                    {{ if ne $network.IP "" }}
+        address=/{{ $host }}/{{ $network.IP }}
+                    {{ end }}
+                {{ end }}
+            {{ else }}
+                {{ range $index, $network := .Container.Networks }}
+                    {{ if ne $network.IP "" }}
+        address=/{{ $host }}.{{ $tld }}/{{ $network.IP }}
+        address=/{{ $host }}.{{ $network.Name }}.{{ $tld }}/{{ $network.IP }}
+                    {{ end }}
+                {{ end }}
+            {{ end }}
+        {{ end }}
+
+        {{ $tld := or ($.Env.DOMAIN_TLD) "docker" }}
+        {{ range $index, $container := $ }}
+            {{ template "host" (dict "Container" $container "Host" $container.Hostname "Tld" $tld) }}
+            {{ template "host" (dict "Container" $container "Host" $container.Name "Tld" $tld) }}
+        {{ end }}
+
+        {{ range $host, $containers := groupByMulti $ "Env.DOMAIN_NAME" "," }}
+            {{ range $index, $container := $containers }}
+                {{ template "host" (dict "Container" $container "Host" (print $host) "Tld" "") }}
+            {{ end }}
+        {{ end }}
 And support `tcp` docker api endpoint .
 
 # build image
@@ -33,20 +57,24 @@ when you start container:
     docker run -ti --rm -h hostname1 --name host1  centos:6.7 bash
 the generated /etc/dnsmasq.conf looks like:
 
-      address=/hostname1/171.17.0.13
       address=/host1.docker/171.17.0.13
       address=/hostname1.docker/171.17.0.13
 
 reference [docker-dns-gen]。
 
-# swarm
-use swarm manger URI-`10.110.17.21:3376`:
+# support user-defined network
+create docker network:
 
-    docker run -d --name dns-gen \
-         --restart always \
-         -p 53:53 \
-         -e DOCKER_URI=tcp://10.110.17.21:3376
-         jiadx/docker-dns-gen
+    docker network create --driver overlay --subnet=173.17.0.0/24 my-net
+start container with user-defined network:
+
+    docker run -ti --rm -h hostname1 --name host1 --net my-net  centos:6.7 bash
+the generated /etc/dnsmasq.conf looks like:
+
+      address=/host1.docker/173.17.0.13
+      address=/host1.my-net.docker/173.17.0.13
+      address=/hostname1.docker/173.17.0.13
+      address=/hostname1.my-net.docker/173.17.0.13
 
   [docker-dns-gen]: https://github.com/jderusse/docker-dns-gen
   [docker-gen]: https://github.com/jwilder/docker-gen

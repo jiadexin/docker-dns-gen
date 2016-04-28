@@ -12,7 +12,7 @@ ADD config/dnsmasq.tmpl /etc/dnsmasq.tmpl
 ADD dnsmasq-reload /usr/local/bin/dnsmasq-reload
 ADD entrypoint /usr/local/bin/entrypoint
 
-VOLUME /var/run
+#VOLUME /var/run
 EXPOSE 53/udp
 
 ENTRYPOINT ["entrypoint"]

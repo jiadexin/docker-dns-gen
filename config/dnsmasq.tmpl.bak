@@ -1,0 +1,6 @@
+{{ $domain := or ($.Env.DOMAIN_TLD) "docker" }}
+{{range $key, $value := .}}
+address=/{{ $value.Hostname }}/{{$value.IP}}
+address=/{{ $value.Name }}.{{$domain}}/{{$value.IP}}
+address=/{{ $value.Hostname }}.{{$domain}}/{{$value.IP}}
+{{end}}

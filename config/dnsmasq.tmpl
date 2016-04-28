@@ -1,6 +1,30 @@
-{{ $domain := or ($.Env.DOMAIN_TLD) "docker" }}
-{{range $key, $value := .}}
-address=/{{ $value.Hostname }}/{{$value.IP}}
-address=/{{ $value.Name }}.{{$domain}}/{{$value.IP}}
-address=/{{ $value.Hostname }}.{{$domain}}/{{$value.IP}}
-{{end}}
+{{ define "host" }}
+    {{ $host := .Host }}
+    {{ $tld := .Tld }}
+    {{ if eq $tld "" }}
+        {{ range $index, $network := .Container.Networks }}
+            {{ if ne $network.IP "" }}
+address=/{{ $host }}/{{ $network.IP }}
+            {{ end }}
+        {{ end }}
+    {{ else }}
+        {{ range $index, $network := .Container.Networks }}
+            {{ if ne $network.IP "" }}
+address=/{{ $host }}.{{ $tld }}/{{ $network.IP }}
+address=/{{ $host }}.{{ $network.Name }}.{{ $tld }}/{{ $network.IP }}
+            {{ end }}
+        {{ end }}
+    {{ end }}
+{{ end }}
+
+{{ $tld := or ($.Env.DOMAIN_TLD) "docker" }}
+{{ range $index, $container := $ }}
+    {{ template "host" (dict "Container" $container "Host" $container.Hostname "Tld" $tld) }}
+    {{ template "host" (dict "Container" $container "Host" $container.Name "Tld" $tld) }}
+{{ end }}
+
+{{ range $host, $containers := groupByMulti $ "Env.DOMAIN_NAME" "," }}
+    {{ range $index, $container := $containers }}
+        {{ template "host" (dict "Container" $container "Host" (print $host) "Tld" "") }}
+    {{ end }}
+{{ end }}
